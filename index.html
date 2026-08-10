@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vedant Baviskar — Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,450;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+  :root{
+    --ink:#0A0E12;
+    --panel:#10161C;
+    --panel2:#151D24;
+    --grid:#1E2A33;
+    --copper:#C1633A;
+    --copper-dim:#8A4A30;
+    --cyan:#5FA8A6;
+    --paper:#EFE6D8;
+    --paper-ink:#1C1712;
+    --white:#E9E4DA;
+    --muted:#7A8790;
+    --muted-warm:#8C8378;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--ink);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    overflow-x:hidden;
+    cursor:none;
+  }
+  ::selection{background:var(--copper);color:var(--ink);}
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--cyan);
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .eyebrow::before{
+    content:'';
+    width:16px;height:1px;
+    background:var(--cyan);
+    display:inline-block;
+  }
+  .eyebrow.copper{color:var(--copper);}
+  .eyebrow.copper::before{background:var(--copper);}
+  .eyebrow.dark{color:var(--copper-dim);}
+  .eyebrow.dark::before{background:var(--copper-dim);}
+
+  h1,h2,h3{font-family:'Fraunces',serif;font-weight:450;letter-spacing:-0.01em;}
+
+  /* ---------- cursor ---------- */
+  #cursor{
+    position:fixed;top:0;left:0;
+    width:26px;height:26px;
+    pointer-events:none;
+    z-index:9999;
+    transform:translate(-50%,-50%);
+    mix-blend-mode:difference;
+  }
+  #cursor svg{width:100%;height:100%;}
+  #coord{
+    position:fixed;
+    pointer-events:none;
+    z-index:9999;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    color:var(--cyan);
+    mix-blend-mode:difference;
+    transform:translate(16px,16px);
+    white-space:nowrap;
+    letter-spacing:.05em;
+  }
+  @media (hover:none){
+    #cursor,#coord{display:none;}
+    body{cursor:auto;}
+  }
+
+  /* ---------- blueprint grid backdrop ---------- */
+  .grid-bg{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:48px 48px;
+    opacity:.35;
+    pointer-events:none;
+  }
+  .grid-bg.fade-b{
+    -webkit-mask-image:linear-gradient(to bottom, black 40%, transparent 95%);
+    mask-image:linear-gradient(to bottom, black 40%, transparent 95%);
+  }
+
+  section{position:relative;}
+
+  /* ---------- sheet frame (corner marks + sheet number) ---------- */
+  .sheet{
+    position:relative;
+    padding:120px 8vw 140px;
+    border-top:1px solid var(--grid);
+  }
+  .sheet::before,.sheet::after,
+  .sheet .corner-tl,.sheet .corner-tr{
+    content:'';
+    position:absolute;
+    width:14px;height:14px;
+    border:1px solid var(--muted);
+    opacity:.5;
+  }
+  .sheet::before{top:24px;left:24px;border-right:none;border-bottom:none;}
+  .sheet::after{top:24px;right:24px;border-left:none;border-bottom:none;}
+  .corner-bl,.corner-br{
+    position:absolute;
+    width:14px;height:14px;
+    border:1px solid var(--muted);
+    opacity:.5;
+  }
+  .corner-bl{bottom:24px;left:24px;border-right:none;border-top:none;}
+  .corner-br{bottom:24px;right:24px;border-left:none;border-top:none;}
+  .sheet-no{
+    position:absolute;
+    top:24px;right:52px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:.15em;
+    color:var(--muted);
+    text-transform:uppercase;
+  }
+
+  /* ---------- HERO ---------- */
+  #hero{
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:0 8vw;
+    overflow:hidden;
+  }
+  #hero .grid-bg{background-size:56px 56px;}
+  .hero-eyebrow{margin-bottom:28px;}
+  .hero-title{
+    font-size:clamp(52px,10vw,140px);
+    line-height:.94;
+    color:var(--white);
+  }
+  .hero-title .line{overflow:hidden;display:block;}
+  .hero-title .line span{display:inline-block;transform:translateY(110%);}
+  .hero-sub{
+    max-width:640px;
+    margin-top:32px;
+    font-size:clamp(16px,2vw,20px);
+    font-weight:300;
+    color:var(--muted);
+    line-height:1.6;
+  }
+  .hero-sub em{color:var(--copper);font-style:normal;}
+  .hero-roles{
+    margin-top:56px;
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    letter-spacing:.05em;
+  }
+  .hero-roles b{color:var(--cyan);font-weight:500;}
+  .scroll-cue{
+    position:absolute;
+    bottom:44px;left:8vw;
+    display:flex;align-items:center;gap:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:var(--muted);
+    letter-spacing:.2em;text-transform:uppercase;
+  }
+  .scroll-cue .bar{
+    width:1px;height:34px;background:var(--muted);
+    position:relative;overflow:hidden;
+  }
+  .scroll-cue .bar::after{
+    content:'';position:absolute;left:0;top:-100%;
+    width:100%;height:100%;background:var(--cyan);
+    animation:cueMove 1.8s ease-in-out infinite;
+  }
+  @keyframes cueMove{
+    0%{top:-100%;} 50%{top:0;} 100%{top:100%;}
+  }
+
+  /* ---------- STUDIO ---------- */
+  .studio-grid{
+    display:grid;
+    grid-template-columns:1.1fr .9fr;
+    gap:80px;
+    margin-top:56px;
+  }
+  @media (max-width:900px){.studio-grid{grid-template-columns:1fr;gap:48px;}}
+  .studio-lead{
+    font-size:clamp(30px,4vw,50px);
+    line-height:1.15;
+    max-width:14ch;
+  }
+  .studio-copy{
+    font-weight:300;
+    font-size:17px;
+    line-height:1.75;
+    color:#B7C0C6;
+    margin-top:24px;
+    max-width:56ch;
+  }
+  .studio-copy b{color:var(--white);font-weight:500;}
+  .stat-list{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+    border-top:1px solid var(--grid);
+  }
+  .stat-row{
+    display:flex;
+    justify-content:space-between;
+    padding:22px 0;
+    border-bottom:1px solid var(--grid);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+  }
+  .stat-row .k{color:var(--muted);letter-spacing:.05em;text-transform:uppercase;}
+  .stat-row .v{color:var(--white);text-align:right;}
+
+  /* ---------- BUILDS ---------- */
+  .builds-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;}
+  .builds-title{font-size:clamp(34px,5vw,64px);max-width:12ch;}
+  .builds-note{
+    font-weight:300;color:var(--muted);max-width:34ch;font-size:14px;line-height:1.6;
+  }
+  .build-list{margin-top:64px;display:flex;flex-direction:column;}
+  .build-row{
+    display:grid;
+    grid-template-columns:70px 1fr auto;
+    gap:28px;
+    align-items:start;
+    padding:34px 0;
+    border-top:1px solid var(--grid);
+    position:relative;
+    transition:padding-left .4s ease;
+  }
+  .build-row:last-child{border-bottom:1px solid var(--grid);}
+  .build-row:hover{padding-left:14px;}
+  .build-row .idx{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--copper);
+    padding-top:6px;
+  }
+  .build-row h3{
+    font-size:clamp(22px,3vw,32px);
+    color:var(--white);
+    font-weight:450;
+  }
+  .build-row .desc{
+    font-weight:300;color:var(--muted);font-size:14.5px;line-height:1.6;
+    margin-top:10px;max-width:62ch;
+  }
+  .build-row .tags{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;
+  }
+  .build-row .tag{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;letter-spacing:.05em;
+    color:var(--cyan);
+    border:1px solid rgba(95,168,166,.35);
+    padding:4px 9px;border-radius:2px;
+  }
+  .build-row .meta{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--muted);
+    text-align:right;
+    padding-top:6px;
+    white-space:nowrap;
+  }
+
+  /* ---------- CRAFT (horizontal gallery) ---------- */
+  .craft-rail{
+    margin-top:60px;
+    display:flex;
+    gap:24px;
+    overflow-x:auto;
+    padding-bottom:24px;
+    scroll-snap-type:x proximity;
+  }
+  .craft-rail::-webkit-scrollbar{height:4px;}
+  .craft-rail::-webkit-scrollbar-thumb{background:var(--grid);}
+  .craft-card{
+    flex:0 0 auto;
+    width:min(78vw,420px);
+    scroll-snap-align:start;
+    background:linear-gradient(160deg,var(--panel),var(--panel2));
+    border:1px solid var(--grid);
+    padding:32px 28px;
+    display:flex;flex-direction:column;
+    min-height:290px;
+  }
+  .craft-card .glyph{
+    width:38px;height:38px;
+    border:1px solid var(--copper-dim);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--copper);
+    margin-bottom:28px;
+  }
+  .craft-card h4{
+    font-family:'Fraunces',serif;font-style:italic;font-weight:400;
+    font-size:24px;color:var(--white);
+  }
+  .craft-card p{
+    font-weight:300;color:var(--muted);font-size:14px;line-height:1.65;
+    margin-top:14px;flex:1;
+  }
+  .craft-card .foot{
+    margin-top:20px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:var(--muted-warm);
+    letter-spacing:.1em;text-transform:uppercase;
+  }
+
+  /* ---------- BEYOND CODE (paper / novel) ---------- */
+  #novel{
+    background:var(--paper);
+    color:var(--paper-ink);
+  }
+  #novel .sheet-no,#novel .eyebrow{color:var(--copper-dim);}
+  #novel::before,#novel::after,#novel .corner-bl,#novel .corner-br{border-color:rgba(28,23,18,.35);}
+  .grain{
+    position:absolute;inset:0;
+    opacity:.06;
+    pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .novel-grid{
+    display:grid;
+    grid-template-columns:.9fr 1.1fr;
+    gap:70px;
+    margin-top:56px;
+    align-items:center;
+  }
+  @media (max-width:900px){.novel-grid{grid-template-columns:1fr;gap:40px;}}
+  .novel-title{
+    font-size:clamp(38px,6vw,80px);
+    font-style:italic;
+    font-weight:400;
+    line-height:1.05;
+  }
+  .novel-copy{
+    font-weight:300;font-size:17px;line-height:1.8;
+    max-width:52ch;
+    color:#3A332B;
+  }
+  .novel-meta{
+    display:flex;gap:32px;margin-top:28px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--copper-dim);
+    letter-spacing:.08em;text-transform:uppercase;
+  }
+  .quote-mark{
+    font-family:'Fraunces',serif;
+    font-size:120px;
+    line-height:.6;
+    color:rgba(193,99,58,.25);
+  }
+
+  /* ---------- CONTACT / INDEX ---------- */
+  #contact{
+    padding-top:120px;
+    padding-bottom:70px;
+  }
+  .contact-title{
+    font-size:clamp(40px,7vw,96px);
+    max-width:16ch;
+  }
+  .contact-title a{color:var(--copper);text-decoration:none;border-bottom:1px solid var(--copper-dim);}
+  .contact-links{
+    margin-top:48px;
+    display:flex;gap:40px;flex-wrap:wrap;
+  }
+  .contact-links a{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;color:var(--white);
+    text-decoration:none;
+    padding-bottom:4px;
+    border-bottom:1px solid var(--grid);
+    letter-spacing:.03em;
+  }
+  .contact-links a:hover{border-color:var(--cyan);color:var(--cyan);}
+  .index-table{
+    margin-top:90px;
+    border-top:1px solid var(--grid);
+  }
+  .index-row{
+    display:flex;justify-content:space-between;
+    padding:14px 0;
+    border-bottom:1px solid var(--grid);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--muted);
+    letter-spacing:.05em;
+  }
+  .index-row span:first-child{color:var(--copper-dim);}
+  footer{
+    padding:28px 8vw 40px;
+    display:flex;justify-content:space-between;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;color:var(--muted);
+    letter-spacing:.1em;text-transform:uppercase;
+  }
+
+  .reveal{opacity:0;transform:translateY(34px);}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    .hero-title .line span{transform:none;}
+    .reveal{opacity:1;transform:none;}
+  }
+</style>
+</head>
+<body>
+
+<div id="cursor">
+  <svg viewBox="0 0 26 26"><line x1="13" y1="0" x2="13" y2="8" stroke="#5FA8A6" stroke-width="1"/><line x1="13" y1="18" x2="13" y2="26" stroke="#5FA8A6" stroke-width="1"/><line x1="0" y1="13" x2="8" y2="13" stroke="#5FA8A6" stroke-width="1"/><line x1="18" y1="13" x2="26" y2="13" stroke="#5FA8A6" stroke-width="1"/><circle cx="13" cy="13" r="1.4" fill="#5FA8A6"/></svg>
+</div>
+<div id="coord">X 000 · Y 000</div>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="grid-bg fade-b"></div>
+  <div class="hero-eyebrow eyebrow">Pune, India — Sheet 00 / Index</div>
+  <h1 class="hero-title">
+    <span class="line"><span>Vedant</span></span>
+    <span class="line"><span>Baviskar</span></span>
+  </h1>
+  <p class="hero-sub reveal">I build things from a blank sheet — <em>brands</em>, <em>software</em>, and <em>stories</em>. Co-founder of a small design studio; author of a debut novel.</p>
+  <div class="hero-roles reveal">
+    <div><b>01</b> &nbsp;Co-founder, Vesa Studios</div>
+    <div><b>02</b> &nbsp;Builder — web, AI &amp; systems</div>
+    <div><b>03</b> &nbsp;Author, The Summer of Seventeen</div>
+  </div>
+  <div class="scroll-cue"><div class="bar"></div>scroll</div>
+</section>
+
+<!-- STUDIO -->
+<section class="sheet" id="studio">
+  <div class="grid-bg"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+  <div class="sheet-no">Sheet 01 / Studio</div>
+  <div class="eyebrow reveal">The Studio</div>
+  <div class="studio-grid">
+    <div>
+      <h2 class="studio-lead reveal">Vesa Studios — built for small businesses, not agencies.</h2>
+      <p class="studio-copy reveal">Co-founded with <b>Shreyash</b> in early 2025, starting from zero followers and a blank site. Vesa designs <b>brand identities</b>, builds <b>cinematic websites</b>, and wires up <b>WhatsApp automation &amp; AI tooling</b> for small and medium businesses across India — the kind of craft usually reserved for clients ten times the size.</p>
+    </div>
+    <div class="stat-list reveal">
+      <div class="stat-row"><span class="k">Founded</span><span class="v">2025, Pune</span></div>
+      <div class="stat-row"><span class="k">Partner</span><span class="v">Shreyash, co-founder</span></div>
+      <div class="stat-row"><span class="k">Discipline</span><span class="v">Brand · Web · Automation</span></div>
+      <div class="stat-row"><span class="k">Client base</span><span class="v">Indian SMBs</span></div>
+      <div class="stat-row"><span class="k">Site</span><span class="v">vesastudios.site</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- BUILDS -->
+<section class="sheet" id="builds">
+  <div class="grid-bg"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+  <div class="sheet-no">Sheet 02 / Systems</div>
+  <div class="eyebrow reveal">Selected Builds</div>
+  <div class="builds-head">
+    <h2 class="builds-title reveal">Systems, shipped end to end.</h2>
+    <p class="builds-note reveal">From satellite data pipelines to payroll engines — each one designed, coded, and deployed solo or alongside Vesa.</p>
+  </div>
+  <div class="build-list">
+    <div class="build-row reveal">
+      <div class="idx">01</div>
+      <div>
+        <h3>AeroSense</h3>
+        <p class="desc">A satellite-based air quality monitoring system, pulling Sentinel-5P TROPOMI data through Google Earth Engine and forecasting with XGBoost and Gemini.</p>
+        <div class="tags"><span class="tag">Earth Engine</span><span class="tag">XGBoost</span><span class="tag">Gemini AI</span></div>
+      </div>
+      <div class="meta">Air Quality<br>Monitoring</div>
+    </div>
+    <div class="build-row reveal">
+      <div class="idx">02</div>
+      <div>
+        <h3>FabriPay</h3>
+        <p class="desc">Attendance and payroll system built for SSK Engineering — role-based access, per-day salary logic, running live on Firebase.</p>
+        <div class="tags"><span class="tag">Firebase</span><span class="tag">Auth</span><span class="tag">Payroll</span></div>
+      </div>
+      <div class="meta">Client System<br>SSK Engineering</div>
+    </div>
+    <div class="build-row reveal">
+      <div class="idx">03</div>
+      <div>
+        <h3>Speaky-Spooky</h3>
+        <p class="desc">A full-stack competitive debate platform — registration, scheduling, leaderboards and certificates for 200 participants, run on Firebase's free tier.</p>
+        <div class="tags"><span class="tag">Vanilla JS</span><span class="tag">Firebase</span><span class="tag">GitHub Pages</span></div>
+      </div>
+      <div class="meta">Debate<br>Platform</div>
+    </div>
+    <div class="build-row reveal">
+      <div class="idx">04</div>
+      <div>
+        <h3>AI Lead Discovery</h3>
+        <p class="desc">Vesa's internal engine — scores inbound leads 0–100 across five dimensions and syncs straight into Google Sheets for the team.</p>
+        <div class="tags"><span class="tag">FastAPI</span><span class="tag">Gemini API</span><span class="tag">Sheets API</span></div>
+      </div>
+      <div class="meta">Internal Tool<br>Vesa Studios</div>
+    </div>
+    <div class="build-row reveal">
+      <div class="idx">05</div>
+      <div>
+        <h3>Study Buddy Bro</h3>
+        <p class="desc">A multi-agent AI study assistant, built with Shreyash for the Google Cloud Gen AI Academy APAC hackathon — first deployed project, first hackathon.</p>
+        <div class="tags"><span class="tag">Google ADK</span><span class="tag">Gemini 1.5</span><span class="tag">Cloud Run</span></div>
+      </div>
+      <div class="meta">Hackathon<br>Cohort 1</div>
+    </div>
+  </div>
+</section>
+
+<!-- CRAFT -->
+<section class="sheet" id="craft">
+  <div class="grid-bg"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+  <div class="sheet-no">Sheet 03 / Craft</div>
+  <div class="eyebrow reveal">Cinematic Client Work</div>
+  <h2 class="builds-title reveal">Websites built to feel like film.</h2>
+  <div class="craft-rail reveal">
+    <div class="craft-card">
+      <div class="glyph">01</div>
+      <h4>Verre Meridian</h4>
+      <p>A luxury watch product page — scroll-based frame animation unfolding into a circular gallery.</p>
+      <div class="foot">Watches · Scroll Film</div>
+    </div>
+    <div class="craft-card">
+      <div class="glyph">02</div>
+      <h4>Cenere</h4>
+      <p>A Neapolitan pizza brand landing page, animated frame by frame — 151 hand-sequenced WebP frames.</p>
+      <div class="foot">Food · Frame Animation</div>
+    </div>
+    <div class="craft-card">
+      <div class="glyph">03</div>
+      <h4>Caffeine Addict</h4>
+      <p>A luxury coffee brand site built twice — once as a single file, once in Next.js with GSAP-driven scroll sections.</p>
+      <div class="foot">Coffee · Seven Scenes</div>
+    </div>
+    <div class="craft-card">
+      <div class="glyph">04</div>
+      <h4>SSK Engineering</h4>
+      <p>A metal-fabrication client's site, rebuilt cinematic — particle fields, parallax, real shop-floor photography.</p>
+      <div class="foot">Fabrication · Pune</div>
+    </div>
+  </div>
+</section>
+
+<!-- NOVEL -->
+<section class="sheet" id="novel">
+  <div class="grain"></div>
+  <div class="corner-bl"></div><div class="corner-br"></div>
+  <div class="sheet-no">Sheet 04 / Beyond Code</div>
+  <div class="eyebrow reveal">Also Writing</div>
+  <div class="novel-grid">
+    <div class="reveal">
+      <div class="quote-mark">&ldquo;</div>
+      <h2 class="novel-title">The Summer<br>of Seventeen</h2>
+    </div>
+    <div class="reveal">
+      <p class="novel-copy">A coming-of-age debut novel — the same instinct behind Vesa's brand work, pointed at a page instead of a screen. Releasing September 2026.</p>
+      <div class="novel-meta">
+        <span>Debut Novel</span>
+        <span>Coming-of-age</span>
+        <span>Release — Sept 2026</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact" style="padding-left:8vw;padding-right:8vw;">
+  <div class="grid-bg fade-b"></div>
+  <div class="eyebrow reveal">Sheet 05 / Contact</div>
+  <h2 class="contact-title reveal">Building something? <a href="https://www.linkedin.com/in/vedant-baviskar" target="_blank" rel="noopener">Let's talk.</a></h2>
+  <div class="contact-links reveal">
+    <a href="https://www.linkedin.com/in/vedant-baviskar" target="_blank" rel="noopener">LinkedIn ↗</a>
+    <a href="https://vesastudios.site" target="_blank" rel="noopener">Vesa Studios ↗</a>
+    <a href="https://vesastudios.site/pulse" target="_blank" rel="noopener">The Pulse ↗</a>
+  </div>
+  <div class="index-table reveal">
+    <div class="index-row"><span>00 — Index</span><span>Vedant Baviskar</span></div>
+    <div class="index-row"><span>01 — Studio</span><span>Vesa Studios</span></div>
+    <div class="index-row"><span>02 — Systems</span><span>Selected builds</span></div>
+    <div class="index-row"><span>03 — Craft</span><span>Cinematic client work</span></div>
+    <div class="index-row"><span>04 — Beyond Code</span><span>The Summer of Seventeen</span></div>
+    <div class="index-row"><span>05 — Contact</span><span>Get in touch</span></div>
+  </div>
+</section>
+
+<footer>
+  <span>© 2026 Vedant Baviskar</span>
+  <span>Pune, India</span>
+</footer>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* custom cursor */
+const cursor = document.getElementById('cursor');
+const coord = document.getElementById('coord');
+window.addEventListener('mousemove', (e)=>{
+  cursor.style.left = e.clientX+'px';
+  cursor.style.top = e.clientY+'px';
+  coord.style.left = e.clientX+'px';
+  coord.style.top = e.clientY+'px';
+  coord.textContent = 'X '+String(e.clientX).padStart(3,'0')+' · Y '+String(e.clientY).padStart(3,'0');
+});
+
+/* hero title draw-in */
+gsap.to('.hero-title .line span', {
+  y:0, duration:1.1, ease:'power4.out', stagger:.12, delay:.2
+});
+gsap.to('.hero-sub, .hero-roles', {opacity:1, y:0, duration:1, ease:'power3.out', delay:.9});
+
+/* generic reveals */
+document.querySelectorAll('.reveal').forEach((el)=>{
+  gsap.to(el, {
+    opacity:1, y:0, duration:.9, ease:'power3.out',
+    scrollTrigger:{ trigger:el, start:'top 88%' }
+  });
+});
+
+/* build rows stagger-in individually with slight extra delay by index */
+gsap.utils.toArray('.build-row').forEach((row,i)=>{
+  gsap.fromTo(row, {opacity:0,y:26}, {
+    opacity:1,y:0,duration:.7,ease:'power2.out',delay:i*0.05,
+    scrollTrigger:{trigger:row, start:'top 92%'}
+  });
+});
+
+/* parallax drift on grid backgrounds */
+gsap.utils.toArray('.grid-bg').forEach((g)=>{
+  gsap.to(g, {
+    backgroundPosition:'0px 60px',
+    ease:'none',
+    scrollTrigger:{trigger:g.parentElement, start:'top bottom', end:'bottom top', scrub:1}
+  });
+});
+</script>
+</body>
+</html>
